@@ -5,11 +5,11 @@ import * as crypto from './crypto.js';
 const DEFAULT_BASE = 'satellite';
 
 // Resolve which repo a user's data lives in.
-// Checks satproto_root.json at the domain root first (in case the user has a
-// custom repo name or an unrelated project called "satellite"), then falls
-// back to the default /satellite/ path.
+// Checks .well-known/satproto.json at the domain root first (in case the user
+// has a custom repo name or an unrelated project called "satellite"), then
+// falls back to the default /satellite/ path.
 async function resolveBase(domain) {
-  const resp = await fetch(`https://${domain}/satproto_root.json`);
+  const resp = await fetch(`https://${domain}/.well-known/satproto.json`);
   if (resp.ok) {
     const data = await resp.json();
     if (data.sat_root) return data.sat_root;
@@ -25,7 +25,7 @@ export async function getSatBase(domain) {
 
 export async function fetchProfile(domain) {
   const base = await getSatBase(domain);
-  const resp = await fetch(`${base}/satproto.json`);
+  const resp = await fetch(`${base}/profile.json`);
   if (!resp.ok) throw new Error(`Profile not found for ${domain}`);
   return resp.json();
 }
@@ -76,13 +76,6 @@ export async function fetchUserPosts(domain, myDomain, mySecret, limit = 50) {
   }
   return posts;
 }
-
-export async function fetchSinglePost(domain, postId, myDomain, mySecret) {
-  const base = await getSatBase(domain);
-  const contentKey = await fetchKeyEnvelope(base, myDomain, mySecret);
-  return fetchPost(base, postId, contentKey);
-}
-
 export function mergeFeed(postArrays) {
   return postArrays.flat().sort((a, b) =>
     b.created_at.localeCompare(a.created_at)
